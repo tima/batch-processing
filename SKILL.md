@@ -162,7 +162,7 @@ When parallel mode is chosen, the workflow differs from sequential:
 
 **Coordinator Role:**
 - Spawns N subagents (calculated: `min(ceil(item_count / 10), 5)`)
-- Monitors progress every 30s
+- Monitors progress every 30 seconds
 - Reports aggregate completion: "X/Y items complete (Z in-progress)"
 - Detects subagent failures and recovers work
 - Merges insights when all items complete
@@ -176,6 +176,8 @@ When parallel mode is chosen, the workflow differs from sequential:
 **Work-Stealing Protocol:**
 
 To prevent duplicate work, todos.md items have three states:
+
+Note: `[>]` is custom syntax for this skill (not standard markdown checkbox).
 
 ```markdown
 - [ ] transcript_01.txt              # Available - unclaimed
@@ -196,7 +198,7 @@ This eliminates race conditions - only one subagent can claim each item.
 
 **Progress Monitoring:**
 
-Coordinator polls todos.md every 30s:
+Coordinator polls todos.md every 30 seconds:
 - Counts `[ ]` (available), `[>]` (in-progress), `[x]` (complete)
 - Reports: "X/Y items complete (Z in-progress)"
 - User can walk away - processing runs autonomously
