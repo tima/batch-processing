@@ -23,6 +23,30 @@ Batch processing is a structured system for processing multiple data items (file
 - One-pass analysis with no resumption
 - Work small enough to fit comfortably in context
 
+## Parallel vs Sequential
+
+The batch-processing skill supports two execution modes:
+
+**Sequential Mode:**
+- Single AI processes items one by one
+- Simpler coordination, lower resource usage
+- Best for: Small batches (< 20 items), simple tasks, resource-constrained environments
+- Time: ~2min per item (10 items = 20min, 50 items = 100min)
+
+**Parallel Mode:**
+- Coordinator spawns multiple subagents (1 per 10 items, max 5)
+- Subagents work-steal from shared todos.md
+- Faster completion, higher resource usage
+- Best for: Large batches (20+ items), time-sensitive work, sufficient resources
+- Time: ~2min per item / N agents (50 items with 5 agents = 20min)
+
+**Mode Selection:**
+At setup, you'll be asked: "Process sequentially or in parallel?"
+- Sequential: Simpler, reliable, proven pattern
+- Parallel: Faster, more complex coordination, requires subagent support
+
+Choose based on batch size, urgency, and available resources.
+
 ## Detection Pattern
 
 When the AI encounters a request like:
