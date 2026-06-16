@@ -530,6 +530,23 @@ Work through all documents in this directory until complete. Do not stop until e
 - Check insights.md format consistency
 - Verify categorization is consistent
 
+**Parallel Mode Additional Checks:**
+
+**Before merge cleanup:**
+- Verify insights-1.md through insights-N.md all exist
+- Spot-check 1-2 findings in each insights-N.md for quality
+- Verify each insights-N.md includes source filenames
+
+**After merge:**
+- Verify insights.md exists and has content from all subagents
+- Count findings per category - should match sum of all insights-N.md
+- Verify no category duplication (each category appears once)
+- Verify intermediate files (insights-1.md through insights-N.md) are deleted
+
+**If merge validation fails:**
+- Intermediate files should still exist (not deleted prematurely)
+- Re-run merge manually or with coordinator
+
 ## Troubleshooting
 
 ### Parallel Mode Issues
