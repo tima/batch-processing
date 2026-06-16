@@ -156,6 +156,83 @@ When you request bulk processing, the AI will:
 
 You can also use the ready-to-use templates below - paste one, answer the AI's confirmation, and processing begins.
 
+### Parallel Processing Workflow
+
+When parallel mode is chosen, the workflow differs from sequential:
+
+**Coordinator Role:**
+- Spawns N subagents (calculated: `min(ceil(item_count / 10), 5)`)
+- Monitors progress every 30s
+- Reports aggregate completion: "X/Y items complete (Z in-progress)"
+- Detects subagent failures and recovers work
+- Merges insights when all items complete
+
+**Subagent Role:**
+- Reads context.md once at start (extraction rules)
+- Executes work-stealing loop until no items remain
+- Writes findings to isolated insights-N.md
+- Reports completion when done
+
+**Work-Stealing Protocol:**
+
+To prevent duplicate work, todos.md items have three states:
+
+```markdown
+- [ ] transcript_01.txt              # Available - unclaimed
+- [>] transcript_02.txt (agent-2)    # In-progress by subagent 2
+- [x] transcript_03.txt              # Complete
+```
+
+**Claiming process:**
+1. Subagent reads todos.md
+2. Finds first `[ ]` item (skips `[>]` and `[x]`)
+3. Immediately changes to `[>] item.txt (agent-N)` - atomic claim
+4. Processes item per context.md rules
+5. Appends findings to insights-N.md (includes source filename + context)
+6. Changes to `[x]` - marks complete
+7. Repeats until no `[ ]` items remain
+
+This eliminates race conditions - only one subagent can claim each item.
+
+**Progress Monitoring:**
+
+Coordinator polls todos.md every 30s:
+- Counts `[ ]` (available), `[>]` (in-progress), `[x]` (complete)
+- Reports: "X/Y items complete (Z in-progress)"
+- User can walk away - processing runs autonomously
+
+**Merge Step:**
+
+When all items are `[x]`:
+1. Coordinator waits for all subagents to finish
+2. Reads insights-1.md through insights-N.md
+3. Groups findings by category (Frustration, Confusion, etc.)
+4. Writes final insights.md with all findings organized by category
+5. Deletes intermediate insights-*.md files
+6. Reports completion: "Processed Y items, output in insights.md"
+
+**Example merge:**
+
+```markdown
+## Frustration (from insights-1.md, insights-3.md, insights-5.md)
+- "We've been doing this manually for months" (file_01.txt - workflow pain)
+- "System times out every time" (file_15.txt - export issue)
+- "Can't figure out how this works" (file_23.txt - UI confusion)
+
+## Confusion (from insights-2.md, insights-4.md)
+- "Why does it work this way?" (file_07.txt - questioning logic)
+- "Instructions unclear" (file_19.txt - documentation gap)
+```
+
+**Failure Recovery:**
+
+If a subagent crashes:
+1. Coordinator detects failure
+2. Finds all `[>] item.txt (agent-N)` entries for that subagent
+3. Changes back to `[ ]` (available for retry)
+4. Other running subagents claim and process these items
+5. No data lost, minimal delay
+
 ### Processing Loop
 
 **For each unchecked item in todos.md:**
