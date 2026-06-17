@@ -475,222 +475,29 @@ When context resets automatically:
 
 ## Ready-to-Use Templates
 
-### Template 1: Customer Language Extraction
+Templates moved to `templates/` directory for token efficiency. Each template includes business context, usage guidance, and complete ready-to-paste prompt.
 
-**Business Context:**
-Extract real customer language from sales/support conversations to use in ad copy, landing pages, and marketing content. Beats assumptions and theory - these are actual phrases customers use when describing pain points. Directly applicable to copywriting, messaging, and positioning.
+**Available templates:**
+- `templates/customer-language-extraction.md` - Extract emotional language for marketing
+- `templates/feature-request-aggregation.md` - Aggregate and rank feature requests
+- `templates/support-ticket-analysis.md` - Identify recurring technical issues
+- `templates/generic-document-processing.md` - Flexible template for any document type
 
-**Use when:** Analyzing 5+ sales calls, prospect conversations, or support transcripts to find emotional language for marketing.
+See `templates/README.md` for detailed usage instructions.
 
-```
-GOAL:
-I want you to analyze all the meeting transcripts in this directory. Extract phrases, questions, and statements where customers or prospects describe problems, frustrations, stress, confusion, or pain points. Only include language that shows genuine emotion or urgency - ignore casual mentions or theoretical scenarios.
+**Template structure:**
+- Business Context: Why you'd use this template
+- When to Use: Triggering conditions
+- Prompt: Complete ready-to-paste prompt with extraction rules and output format
 
-BEFORE YOU START:
-Create three files:
-
-1. context.md - Store this entire goal statement and the extraction criteria
-2. todos.md - Create a numbered checklist of every transcript file in this directory
-3. insights.md - This will store all extracted customer language, organized by emotional category (Frustration, Fear, Confusion, Stress, Pain Points)
-
-AS YOU WORK:
-- Process one transcript at a time
-- After processing each transcript, update insights.md with any relevant quotes (include the file name and approximate timestamp if available)
-- Immediately after updating insights.md, check off that transcript in todos.md
-- CRITICAL: Make sure todos.md is up to date BEFORE your memory resets
-
-AFTER YOUR MEMORY RESETS:
-- First, read context.md to remember your goal
-- Then, read todos.md to see which transcripts you've already completed
-- Continue processing from where you left off
-
-EXTRACTION RULES:
-- Only extract direct quotes - do not paraphrase
-- Only include statements tied to visible emotion (tone shifts, repeated mentions, explicit statements like "this is frustrating")
-- Categorize each quote by the primary emotion: Frustration, Fear, Confusion, Stress, or Pain Points
-- If a quote fits multiple categories, include it in both
-- Ignore any discussion about competitors unless it reveals our product's gaps
-- Ignore feature requests (we'll extract those separately)
-
-OUTPUT FORMAT IN insights.md:
-
-Choose merge strategy when starting parallel mode:
-- Category-based (recommended): Organize by emotion (Frustration, Fear, Confusion, Stress, Pain Points)
-- Chronological: Organize by transcript order
-- Frequency-based: Organize by how often emotions mentioned
-
-Example (category-based):
-## Frustration
-- "We've been manually doing this for six months and it's killing us" (transcript_042.txt - data entry workflow)
-- "Every time I try to export, the system times out" (transcript_018.txt - export feature complaint)
-
-Example (frequency-based):
-## High Frequency (5+ mentions)
-- Export timeout frustration (transcript_018.txt, transcript_024.txt, transcript_031.txt, transcript_042.txt, transcript_055.txt)
-
-Work through all transcripts in this directory until complete. Do not stop until every file in todos.md is checked off.
-```
-
-### Template 2: Feature Request Aggregation
-
-**Business Context:**
-Build data-driven product roadmaps by aggregating feature requests from actual customer conversations. Identify most-requested features, understand urgency, and prioritize based on real demand rather than gut feel. Directly feeds into product planning and roadmap prioritization.
-
-**Use when:** Analyzing 5+ customer conversations, feedback sessions, or support interactions to identify feature requests and rank by demand.
-
-```
-GOAL:
-I want you to analyze all the transcripts/documents in this directory. Extract feature requests, suggestions, or "I wish..." statements from customers. Track frequency to identify the most commonly requested features.
-
-BEFORE YOU START:
-Create three files:
-
-1. context.md - Store this entire goal statement and the extraction criteria
-2. todos.md - Create a numbered checklist of every file in this directory
-3. insights.md - This will store all feature requests, organized by frequency and product area
-
-AS YOU WORK:
-- Process one file at a time
-- After processing each file, update insights.md with any feature requests (include exact quote, source file, and context)
-- Immediately after updating insights.md, check off that file in todos.md
-- CRITICAL: Make sure todos.md is up to date BEFORE your memory resets
-
-AFTER YOUR MEMORY RESETS:
-- First, read context.md to remember your goal
-- Then, read todos.md to see which files you've already completed
-- Continue processing from where you left off
-
-EXTRACTION RULES:
-- Extract requests, suggestions, wishes, or improvement ideas
-- Include exact quote and surrounding context
-- Note if mentioned by multiple customers - track frequency as you go
-- Categorize by product area if clear from context
-- Distinguish "must-have" from "nice-to-have" based on customer language intensity
-- Track whether customer said they'd pay for it, or mentioned competitors having it
-
-OUTPUT FORMAT IN insights.md:
-
-Frequency-based merge recommended for feature requests.
-
-Example (frequency-based):
-## High Frequency (3+ mentions)
-- "Bulk export to CSV" (ticket_023.txt, ticket_091.txt, transcript_15.txt - all mentioned needing CSV export)
-
-Example (category-based):
-## Authentication
-- Two-factor authentication (transcript_08.txt, transcript_22.txt, transcript_31.txt)
-
-Example (chronological):
-## Transcript_08.txt
-- Two-factor authentication request (security requirement)
-
-Work through all files in this directory until complete. Do not stop until every file in todos.md is checked off.
-```
-
-### Template 3: Support Ticket Analysis
-
-**Business Context:**
-Identify recurring technical issues, common failure patterns, and root causes from support tickets. Use findings to prioritize bug fixes, improve documentation, or redesign problematic workflows. Reduces support load by addressing systemic issues rather than treating symptoms.
-
-**Use when:** Analyzing 5+ support tickets to find patterns, recurring issues, or common root causes across customer problems.
-
-```
-GOAL:
-I want you to analyze all the support tickets in this directory. Extract recurring issues, error patterns, and root causes. Categorize by severity and product area to identify what needs fixing most urgently.
-
-BEFORE YOU START:
-Create three files:
-
-1. context.md - Store this entire goal statement and the extraction criteria
-2. todos.md - Create a numbered checklist of every ticket file in this directory
-3. insights.md - This will store all issues, organized by severity and product area
-
-AS YOU WORK:
-- Process one ticket at a time
-- After processing each ticket, update insights.md with any issues (include severity, description, root cause if known, source ticket)
-- Immediately after updating insights.md, check off that ticket in todos.md
-- CRITICAL: Make sure todos.md is up to date BEFORE your memory resets
-
-AFTER YOUR MEMORY RESETS:
-- First, read context.md to remember your goal
-- Then, read todos.md to see which tickets you've already completed
-- Continue processing from where you left off
-
-EXTRACTION RULES:
-- Identify recurring error messages or failure patterns
-- Extract root cause if customer or support agent mentioned it
-- Note workarounds used (indicates pain points worth fixing properly)
-- Categorize severity: Critical (product blocking), High (workflow impact), Medium (friction/annoyance)
-- Track product area affected (authentication, export, API, etc.)
-- Note if multiple tickets mention the same issue - track frequency
-
-OUTPUT FORMAT IN insights.md:
-Organize by severity, then by product area:
-
-Example:
-## Critical - Authentication
-- Login timeout after 2FA (ticket_034.txt, ticket_089.txt - root cause: session timeout = 30s but 2FA takes 45s, affects 2 customers)
-- Password reset emails not arriving (ticket_056.txt, ticket_071.txt, ticket_103.txt - spam filter issue, workaround: whitelist domain)
-
-## High - Export Feature
-- CSV export fails for datasets over 10k rows (ticket_042.txt, ticket_091.txt - timeout issue, workaround: split into smaller exports)
-
-## Medium - UI/UX
-- Confusing navigation in settings panel (ticket_015.txt - customer couldn't find API keys section)
-
-Work through all tickets in this directory until complete. Do not stop until every file in todos.md is checked off.
-```
-
-### Template 4: Generic Document Processing
-
-**Business Context:**
-Flexible template for any bulk document processing task. Extract specific information, identify patterns, or transform data from 5+ similar documents. Adapt this template by filling in the bracketed sections with your specific extraction criteria.
-
-**Use when:** Processing 5+ documents of the same type (meeting notes, research papers, interview transcripts, reports, etc.) to extract specific information.
-
-```
-GOAL:
-I want you to analyze all the [DOCUMENT TYPE] in this directory. Extract [SPECIFIC INFORMATION YOU WANT]. Focus on [WHAT MATTERS MOST] and ignore [WHAT TO SKIP].
-
-BEFORE YOU START:
-Create three files:
-
-1. context.md - Store this entire goal statement and the extraction criteria
-2. todos.md - Create a numbered checklist of every file in this directory
-3. insights.md - This will store all extracted information, organized by [YOUR CATEGORIES]
-
-AS YOU WORK:
-- Process one document at a time
-- After processing each document, update insights.md with extracted information (include source file name and brief context)
-- Immediately after updating insights.md, check off that document in todos.md
-- CRITICAL: Make sure todos.md is up to date BEFORE your memory resets
-
-AFTER YOUR MEMORY RESETS:
-- First, read context.md to remember your goal
-- Then, read todos.md to see which documents you've already completed
-- Continue processing from where you left off
-
-EXTRACTION RULES:
-[List your specific criteria - examples:]
-- Extract only [SPECIFIC TYPE OF INFORMATION]
-- Include [REQUIRED DETAILS] with each finding
-- Categorize by [YOUR CATEGORIES]
-- Track frequency if same item appears multiple times
-- Ignore [WHAT TO SKIP]
-
-OUTPUT FORMAT IN insights.md:
-Organize by [YOUR ORGANIZATION SCHEME]:
-
-Example:
-## [CATEGORY 1]
-- [Finding with details] (source_file.txt - brief context)
-- [Another finding] (another_file.txt - brief context)
-
-## [CATEGORY 2]
-- [Finding] (file.txt - context)
-
-Work through all documents in this directory until complete. Do not stop until every file in todos.md is checked off.
-```
+**Using templates:**
+1. Read template file matching your use case
+2. Copy the Prompt section
+3. Paste into AI session
+4. AI offers dry-run mode (recommended first-time)
+5. Choose sequential or parallel mode
+6. Choose merge strategy (if parallel)
+7. AI processes batch autonomously
 
 ## Validation
 
