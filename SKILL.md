@@ -102,6 +102,11 @@ When the AI encounters a request like:
      - If T < 0.5 min: N = 1 (items too fast for parallel overhead)
      - If T > 5 min: N = 5 (items complex enough to always max out)
      - Create empty insights-1.md through insights-N.md
+     - Ask merge strategy: "How should findings be organized in final insights.md?"
+       - A) By category (Frustration, Confusion, etc.) - groups similar findings
+       - B) Chronologically (by file order in todos.md) - preserves sequence
+       - C) By frequency (most mentioned first) - highlights common patterns
+     - Store choice in context.md for merge step
      - Spawn N subagents to process first 10 items
      - Merge to insights.md
      - Show insights.md to user
@@ -119,6 +124,11 @@ When the AI encounters a request like:
      - If T > 5 min: N = 5 (items complex enough to always max out)
      - Inform user: "First item took [T] min, estimated [estimated_total] min total, using [N] subagents for ~[estimated_total/N] min completion"
      - Create empty insights-1.md through insights-N.md
+     - Ask merge strategy: "How should findings be organized in final insights.md?"
+       - A) By category (Frustration, Confusion, etc.) - groups similar findings
+       - B) Chronologically (by file order in todos.md) - preserves sequence
+       - C) By frequency (most mentioned first) - highlights common patterns
+     - Store choice in context.md for merge step
      - Spawn N subagents with work-stealing instructions
      - Monitor progress, merge when complete
 
@@ -298,23 +308,61 @@ Coordinator polls todos.md every 30 seconds:
 
 When all items are `[x]`:
 1. Coordinator waits for all subagents to finish
-2. Reads insights-1.md through insights-N.md
-3. Groups findings by category (Frustration, Confusion, etc.)
-4. Writes final insights.md with all findings organized by category
-5. Deletes intermediate insights-*.md files
-6. Reports completion: "Processed Y items, output in insights.md"
+2. Reads context.md for merge strategy choice
+3. Reads insights-1.md through insights-N.md
+4. **Applies chosen merge strategy:**
 
-**Example merge:**
+   **A) Category-based (default):**
+   - Groups findings by category (Frustration, Confusion, etc.)
+   - Writes insights.md with category headers
+   - Findings organized under relevant categories from all subagents
+
+   **B) Chronological:**
+   - Groups findings by source file order (from todos.md)
+   - Writes insights.md with file-based headers: "## Findings from file_01.txt"
+   - Preserves processing sequence across all subagents
+
+   **C) Frequency-based:**
+   - Counts mentions of each finding across insights-*.md files
+   - Ranks by frequency (most mentioned first)
+   - Writes insights.md with frequency headers: "## High Frequency (5+ mentions)"
+   - Includes source files for each finding
+
+5. Deletes intermediate insights-*.md files
+6. Reports completion: "Processed Y items, output in insights.md (organized by [strategy])"
+
+**Example merge (category-based):**
 
 ```markdown
 ## Frustration (from insights-1.md, insights-3.md, insights-5.md)
 - "We've been doing this manually for months" (file_01.txt - workflow pain)
 - "System times out every time" (file_15.txt - export issue)
-- "Can't figure out how this works" (file_23.txt - UI confusion)
 
 ## Confusion (from insights-2.md, insights-4.md)
 - "Why does it work this way?" (file_07.txt - questioning logic)
-- "Instructions unclear" (file_19.txt - documentation gap)
+```
+
+**Example merge (chronological):**
+
+```markdown
+## Findings from file_01.txt
+- "We've been doing this manually for months" (insights-1.md - Frustration)
+
+## Findings from file_07.txt
+- "Why does it work this way?" (insights-2.md - Confusion)
+
+## Findings from file_15.txt
+- "System times out every time" (insights-3.md - Frustration)
+```
+
+**Example merge (frequency-based):**
+
+```markdown
+## High Frequency (3+ mentions)
+- "System times out" (file_15.txt, file_23.txt, file_41.txt - export issue mentioned by 3 customers)
+
+## Medium Frequency (2 mentions)
+- "Confusing navigation" (file_07.txt, file_19.txt - UI issue)
 ```
 
 **Failure Recovery:**
@@ -465,18 +513,20 @@ EXTRACTION RULES:
 - Ignore feature requests (we'll extract those separately)
 
 OUTPUT FORMAT IN insights.md:
-Organize by category, with each quote including:
-- The exact quote
-- The source file name
-- Brief context (1 sentence max)
 
-Example:
+Choose merge strategy when starting parallel mode:
+- Category-based (recommended): Organize by emotion (Frustration, Fear, Confusion, Stress, Pain Points)
+- Chronological: Organize by transcript order
+- Frequency-based: Organize by how often emotions mentioned
+
+Example (category-based):
 ## Frustration
-- "We've been manually doing this for six months and it's killing us" (transcript_042.txt - discussing data entry workflow)
+- "We've been manually doing this for six months and it's killing us" (transcript_042.txt - data entry workflow)
 - "Every time I try to export, the system times out" (transcript_018.txt - export feature complaint)
 
-## Confusion
-- "I don't understand why it works this way" (transcript_031.txt - questioning workflow logic)
+Example (frequency-based):
+## High Frequency (5+ mentions)
+- Export timeout frustration (transcript_018.txt, transcript_024.txt, transcript_031.txt, transcript_042.txt, transcript_055.txt)
 
 Work through all transcripts in this directory until complete. Do not stop until every file in todos.md is checked off.
 ```
@@ -519,18 +569,20 @@ EXTRACTION RULES:
 - Track whether customer said they'd pay for it, or mentioned competitors having it
 
 OUTPUT FORMAT IN insights.md:
-Organize by frequency, then by product area:
 
-Example:
+Frequency-based merge recommended for feature requests.
+
+Example (frequency-based):
 ## High Frequency (3+ mentions)
-- "Bulk export to CSV" (ticket_023.txt, ticket_091.txt, transcript_15.txt - all mentioned needing CSV export for reporting)
-- "Two-factor authentication" (transcript_08.txt, transcript_22.txt, transcript_31.txt - security requirement, one mentioned competitor has it)
+- "Bulk export to CSV" (ticket_023.txt, ticket_091.txt, transcript_15.txt - all mentioned needing CSV export)
 
-## Medium Frequency (2 mentions)
-- "Dark mode interface" (ticket_045.txt, transcript_19.txt - both called it "nice to have")
+Example (category-based):
+## Authentication
+- Two-factor authentication (transcript_08.txt, transcript_22.txt, transcript_31.txt)
 
-## Single Mentions - High Priority
-- "API access for automation" (transcript_12.txt - customer said they'd upgrade plan for this)
+Example (chronological):
+## Transcript_08.txt
+- Two-factor authentication request (security requirement)
 
 Work through all files in this directory until complete. Do not stop until every file in todos.md is checked off.
 ```
