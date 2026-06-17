@@ -306,6 +306,8 @@ Coordinator polls todos.md with exponential backoff (reduces token waste):
 - Milestone checks: 25%, 50%, 75% completion (always report regardless of backoff)
 - Final: When all items `[x]`
 
+Backoff timer and milestone checks are independent - coordinator checks occur at BOTH scheduled backoff intervals AND whenever a milestone percentage is reached, resulting in additional checks beyond the backoff schedule if milestones don't align with those intervals.
+
 Example for 50-item batch (~20min total):
 - 30s: "5/50 complete (10%)" - first check
 - 90s: "15/50 complete (30%)" - 25% milestone
