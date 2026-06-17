@@ -168,7 +168,7 @@ When the AI encounters a request like:
 1. Coordinator spawns N subagents (1 per 10 items, max 5)
 2. Each subagent work-steals from todos.md:
    - Find first `[ ]` item → claim as `[>]` → process → append to insights-N.md → mark `[x]`
-3. Coordinator monitors every 30 seconds: "X/Y complete (Z in-progress)"
+3. Coordinator monitors with exponential backoff (30s → 60s → 120s → 240s) + milestone checks (25%, 50%, 75%)
 4. When all `[x]`: merge insights-1..N.md → insights.md
 5. On subagent failure: change `[>]` back to `[ ]`, other agents claim it
 
@@ -263,8 +263,9 @@ When parallel mode is chosen, the workflow differs from sequential:
 - Calculates N adaptively: `N = min(ceil(T * item_count / 20), 5)`
 - Special cases: T < 0.5 → N=1, T > 5 → N=5
 - Spawns N subagents
-- Monitors progress every 30 seconds
-- Reports aggregate completion: "X/Y items complete (Z in-progress)"
+- Monitors progress with exponential backoff (30s, 60s, 120s, 240s max)
+- Checks at milestones (25%, 50%, 75%) regardless of backoff
+- Reports aggregate completion: "X/Y complete (Z% - P in-progress)"
 - Detects subagent failures and recovers work
 - Merges insights when all items complete
 
@@ -299,10 +300,22 @@ This eliminates race conditions - only one subagent can claim each item.
 
 **Progress Monitoring:**
 
-Coordinator polls todos.md every 30 seconds:
-- Counts `[ ]` (available), `[>]` (in-progress), `[x]` (complete)
-- Reports: "X/Y items complete (Z in-progress)"
-- User can walk away - processing runs autonomously
+Coordinator polls todos.md with exponential backoff (reduces token waste):
+- Initial: 30s after spawn
+- Then: 60s, 120s, 240s (doubles each time, max 240s = 4min)
+- Milestone checks: 25%, 50%, 75% completion (always report regardless of backoff)
+- Final: When all items `[x]`
+
+Example for 50-item batch (~20min total):
+- 30s: "5/50 complete (10%)" - first check
+- 90s: "15/50 complete (30%)" - 25% milestone
+- 210s: "25/50 complete (50%)" - 50% milestone  
+- 450s: "38/50 complete (76%)" - 75% milestone
+- 690s: "50/50 complete (100%)" - completion
+
+Reports: "X/Y items complete (Z% - P in-progress)"
+
+**Why backoff:** Early phase has high activity (many claims), late phase is predictable. Checking every 30s for 20min = 40 checks. Backoff = ~8 checks with milestone coverage.
 
 **Merge Step:**
 
