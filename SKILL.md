@@ -34,11 +34,13 @@ The batch-processing skill supports two execution modes:
 - Time: ~2min per item (10 items = 20min, 20 items = 40min)
 
 **Parallel Mode:**
-- Coordinator spawns multiple subagents (1 per 10 items, max 5)
+- Coordinator spawns multiple subagents (adaptive based on first item timing)
 - Subagents work-steal from shared todos.md
 - Faster completion, higher resource usage
 - Best for: Large batches (> 20 items), time-sensitive work, sufficient resources
-- Time: ~2min per item / N agents (10 items with 1 agent = 20min, 50 items with 5 agents = 20min)
+- Time: Adaptive based on first item - measures first item processing time, estimates total, calculates N
+- Formula: `N = min(ceil(estimated_total_minutes / 20), 5)` where 20min is target completion window
+- Example: First item takes 3 min → 50 items = 150 min total → N = min(ceil(150/20), 5) = 5 agents → 30 min completion
 
 **Mode Selection:**
 At setup, you'll be asked: "Process sequentially or in parallel?"
@@ -94,19 +96,28 @@ When the AI encounters a request like:
      - Create context.md with their goal
      - Enumerate files to create todos.md
      - Mark only first 10 items as active: `- [ ] file.txt # DRY-RUN`
-     - Calculate N = min(ceil(10 / 10), 5) = 1 subagent for dry-run
-     - Create empty insights-1.md
-     - Spawn 1 subagent to process first 10 items
+     - Measure first item: process first item, record time T (minutes)
+     - Estimate total: `estimated_total = T * item_count`
+     - Calculate N = min(ceil(estimated_total / 20), 5) where 20min is target window
+     - If T < 0.5 min: N = 1 (items too fast for parallel overhead)
+     - If T > 5 min: N = 5 (items complex enough to always max out)
+     - Create empty insights-1.md through insights-N.md
+     - Spawn N subagents to process first 10 items
      - Merge to insights.md
      - Show insights.md to user
+     - Inform user: "First item took [T] min, estimated [estimated_total] min total, using [N] subagents for ~[estimated_total/N] min completion"
      - Ask: "Does output format look correct? Adjust extraction rules or continue?"
-     - If adjust: update context.md, reset first 10 items to `[ ]`, clear insights-1.md, reprocess
-     - If continue: remove # DRY-RUN markers, calculate full N, spawn remaining subagents, process all items
+     - If adjust: update context.md, reset first 10 items to `[ ]`, clear insights-*.md, reprocess
+     - If continue: remove # DRY-RUN markers, spawn remaining subagents, process all items
    - **If full batch:**
-     - Calculate N = min(ceil([item_count] / 10), 5)
-     - Inform user: "Using [N] subagents for [item_count] items"
      - Create context.md with their goal
      - Enumerate files to create todos.md (format: `- [ ] filename`)
+     - Measure first item: process first item, record time T (minutes)
+     - Estimate total: `estimated_total = T * item_count`
+     - Calculate N = min(ceil(estimated_total / 20), 5) where 20min is target window
+     - If T < 0.5 min: N = 1 (items too fast for parallel overhead)
+     - If T > 5 min: N = 5 (items complex enough to always max out)
+     - Inform user: "First item took [T] min, estimated [estimated_total] min total, using [N] subagents for ~[estimated_total/N] min completion"
      - Create empty insights-1.md through insights-N.md
      - Spawn N subagents with work-stealing instructions
      - Monitor progress, merge when complete
@@ -238,7 +249,10 @@ For batches where you're unsure about extraction rules, dry-run mode processes a
 When parallel mode is chosen, the workflow differs from sequential:
 
 **Coordinator Role:**
-- Spawns N subagents (calculated: `min(ceil(item_count / 10), 5)`)
+- Measures first item processing time T
+- Calculates N adaptively: `N = min(ceil(T * item_count / 20), 5)`
+- Special cases: T < 0.5 → N=1, T > 5 → N=5
+- Spawns N subagents
 - Monitors progress every 30 seconds
 - Reports aggregate completion: "X/Y items complete (Z in-progress)"
 - Detects subagent failures and recovers work
@@ -333,8 +347,13 @@ If coordinator crashes or user stops processing mid-batch:
    - Any `[>] item.txt (agent-N)` where agent N is not running
    - Change back to `[ ]` for retry
 
-4. **Resume:**
-   - Calculate N = min(ceil(total_remaining / 10), 5)
+4. **Resume with adaptive calculation:**
+   - If insights-*.md files exist, estimate T from previous work:
+     - `avg_time_per_item = total_elapsed / items_completed`
+     - `estimated_remaining = avg_time_per_item * total_remaining`
+   - Else measure first remaining item for T
+   - Calculate N = min(ceil(estimated_remaining / 20), 5)
+   - If T < 0.5: N=1, if T > 5: N=5
    - Identify max existing insights-N.md number
    - Create additional insights-M.md files if N > max (empty)
    - Spawn N subagents
