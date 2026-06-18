@@ -96,24 +96,18 @@ When the AI encounters a request like:
      - Create context.md with their goal
      - Enumerate files to create todos.md
      - Mark only first 10 items as active: `- [ ] file.txt # DRY-RUN`
-     - Measure first item: process first item, record time T (minutes)
-     - Estimate total: `estimated_total = T * item_count`
-     - Calculate N = min(ceil(estimated_total / 20), 5) where 20min is target window
-     - If T < 0.5 min: N = 1 (items too fast for parallel overhead)
-     - If T > 5 min: N = 5 (items complex enough to always max out)
-     - Create empty insights-1.md through insights-N.md
+     - Create empty insights-1.md (dry-run always uses N=1 subagent for preview)
      - Ask merge strategy: "How should findings be organized in final insights.md?"
        - A) By category (Frustration, Confusion, etc.) - groups similar findings
        - B) Chronologically (by file order in todos.md) - preserves sequence
        - C) By frequency (most mentioned first) - highlights common patterns
      - Store choice in context.md for merge step
-     - Spawn N subagents to process first 10 items
+     - Spawn 1 subagent to process first 10 items
      - Merge to insights.md
      - Show insights.md to user
-     - Inform user: "First item took [T] min, estimated [estimated_total] min total, using [N] subagents for ~[estimated_total/N] min completion"
      - Ask: "Does output format look correct? Adjust extraction rules or continue?"
-     - If adjust: update context.md, reset first 10 items to `[ ]`, clear insights-*.md, reprocess
-     - If continue: remove # DRY-RUN markers, spawn remaining subagents, process all items
+     - If adjust: update context.md, reset first 10 items to `[ ]`, clear insights-1.md, reprocess
+     - If continue: measure first item, estimate total, calculate adaptive N, remove # DRY-RUN markers, create insights-2.md through insights-N.md if needed, spawn N subagents, process all items
    - **If full batch:**
      - Create context.md with their goal
      - Enumerate files to create todos.md (format: `- [ ] filename`)
@@ -140,10 +134,16 @@ When the AI encounters a request like:
 7. **If resuming interrupted parallel batch:**
    - Check for existing todos.md with mix of `[ ]`, `[>]`, and `[x]` items
    - Count remaining: `remaining = count([ ]) + count([>])`
-   - Calculate N = min(ceil(remaining / 10), 5)
-   - Inform user: "Resuming parallel batch - [N] subagents for [remaining] remaining items"
    - Read existing context.md (preserve original extraction rules)
    - Clean up stale `[>]` items (if any subagent IDs no longer active)
+   - Calculate adaptive N:
+     - If insights-*.md files exist, estimate T from previous work:
+       - `avg_time_per_item = total_elapsed / items_completed`
+       - `estimated_remaining = avg_time_per_item * remaining`
+     - Else measure first remaining item for T
+     - Calculate N = min(ceil(estimated_remaining / 20), 5)
+     - If T < 0.5: N=1, if T > 5: N=5
+   - Inform user: "Resuming parallel batch - [N] subagents for [remaining] remaining items (estimated [estimated_remaining] min)"
    - Identify highest existing insights-N.md number
    - Create additional insights files if N > existing max
    - Spawn N subagents with same work-stealing instructions
@@ -165,7 +165,7 @@ When the AI encounters a request like:
 6. **Continue until all items are checked off - no stopping until complete**
 
 **Parallel Mode Pattern:**
-1. Coordinator spawns N subagents (1 per 10 items, max 5)
+1. Coordinator spawns N subagents (adaptive: measure first item, target ~20min completion)
 2. Each subagent work-steals from todos.md:
    - Find first `[ ]` item → claim as `[>]` → process → append to insights-N.md → mark `[x]`
 3. Coordinator monitors with exponential backoff (30s → 60s → 120s → 240s) + milestone checks (25%, 50%, 75%)
@@ -698,8 +698,14 @@ with open("insights.md", "w") as out:
 
 **Recovery:**
 1. Count remaining: `remaining = count([ ]) + count([>])`
-2. Calculate N = min(ceil(remaining / 10), 5)
-3. Clean stale `[>]` claims (change to `[ ]`)
+2. Clean stale `[>]` claims (change to `[ ]`)
+3. Calculate adaptive N:
+   - If insights-*.md files exist, estimate T from previous work:
+     - `avg_time_per_item = total_elapsed / items_completed`
+     - `estimated_remaining = avg_time_per_item * remaining`
+   - Else measure first remaining item for T
+   - Calculate N = min(ceil(estimated_remaining / 20), 5)
+   - If T < 0.5: N=1, if T > 5: N=5
 4. Identify max existing insights-N.md number
 5. Create additional insights files if needed (insights-M.md where M > max)
 6. Tell AI: "Resume parallel batch processing - read context.md and todos.md, spawn [N] subagents"
