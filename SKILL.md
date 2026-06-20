@@ -5,6 +5,8 @@ description: Use when processing bulk data (files, transcripts, tickets, documen
 
 # Batch Processing
 
+Process bulk data across long sessions without losing progress to context compaction.
+
 ## Overview
 
 Batch processing is a structured system for processing multiple data items (files, records, documents) while maintaining progress across context compaction. Instead of holding all results in memory, the batch processor externalizes state to three files: a context file (why you're working), a todos file (what's left), and an insights file (what you've found). When context compacts, the processor re-reads these files and resumes automatically.
